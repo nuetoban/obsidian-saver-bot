@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "obsidian-saver-bot.fullname" . }}
+  labels:
+    {{- include "obsidian-saver-bot.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "obsidian-saver-bot.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "obsidian-saver-bot.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "obsidian-saver-bot.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: OBSIDIAN_BOT_GIT_NAME
+              value: "{{ .Values.nameOfCommitAuthor }}"
+            - name: OBSIDIAN_BOT_GIT_EMAIL
+              value: "{{ .Values.emailOfCommitAuthor }}"
+            - name: OBSIDIAN_BOT_GITHUB_REPO
+              value: "{{ .Values.targetGithubRepo }}"
+            - name: OBSIDIAN_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "obsidian-saver-bot.fullname" . }}
+                  key: botToken
+            - name: OBSIDIAN_BOT_GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "obsidian-saver-bot.fullname" . }}
+                  key: githubToken
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

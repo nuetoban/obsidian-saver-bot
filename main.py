@@ -2,7 +2,7 @@ import pathlib
 import os
 import re
 import logging
-from datetime import date
+from datetime import date, datetime
 from subprocess import run, PIPE
 
 from aiogram import Bot, Dispatcher, executor, types
@@ -52,21 +52,49 @@ async def on_text(message: types.Message):
     today = date.today()
 
     # Check if the message is forward from NH (https://t.me/hacker_news_feed) channel
-    if message.forward_from_chat.username == "hacker_news_feed":
+    if message.forward_from_chat and message.forward_from_chat.username == "hacker_news_feed":
         header = message.text.split("\n")[0].strip()
         header = (
-            "[HN] ["
+            "(HN) ("
             + today.strftime("%Y-%m-%d")
-            + "] "
+            + ") "
             + re.sub(
                 r"\s\(.{0,3}Score: \d+\+ in \d+ \w+\)", "", header, count=0, flags=0
             )
         )
-        logging.info("Creating ", header)
+        print("Creating ", header)
         with open(f"./repo/Incoming/{header}.md", "w") as f:
             f.write(message.text)
             f.write("\n\n- [ ] Completed")
             f.write("\n\n#hn")
+            f.write("\n\n## What the article is about?\n")
+            f.write("\n\n## What can I learn from it?\n")
+    elif message.forward_from_chat and message.forward_from_chat.username:
+        header = (
+            "(Forward) ("
+            + today.strftime("%Y-%m-%d")
+            + ") "
+            + f"({message.forward_from_chat.username}) "
+            + datetime.now().strftime("%H:%M:%S")
+        )
+        print("Creating ", header)
+        with open(f"./repo/Incoming/{header}.md", "w") as f:
+            f.write(message.text)
+            f.write("\n\n- [ ] Completed")
+            f.write(f"\n\n#{message.forward_from_chat.username}")
+            f.write("\n\n## What the article is about?\n")
+            f.write("\n\n## What can I learn from it?\n")
+    elif message.text:
+        header = (
+            "(Text) ("
+            + today.strftime("%Y-%m-%d")
+            + ") "
+            + datetime.now().strftime("%H:%M:%S")
+        )
+        print("Creating ", header)
+        with open(f"./repo/Incoming/{header}.md", "w") as f:
+            f.write(message.text)
+            f.write("\n\n- [ ] Completed")
             f.write("\n\n## What the article is about?\n")
             f.write("\n\n## What can I learn from it?\n")
 

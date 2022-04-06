@@ -1,0 +1,3 @@
+venv
+repo
+helm/values-*.yaml
